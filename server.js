@@ -5,7 +5,7 @@ const fs = require('fs')
 
 
 var mysql      = require('mysql');
-const { allowedNodeEnvironmentFlags } = require('process');
+const { allowedNodeEnvironmentFlags, exit } = require('process');
 var connection = mysql.createConnection({
   host     : 'localhost',
   user     : 'root',
@@ -44,11 +44,15 @@ const employeeTracker = () =>
       updateEmployee()
     }else if (response.employee === 'add roles' ) {
       addRole()
-    }else (response.employee === 'view roles') {
+    }else if (response.employee === 'view roles') {
       viewRoles()
-    };
+    }else{
+      exit()
+    }
     
   })
   
-  const addDepartment()
+  const addDepartment () => {
+
+  }
   
