@@ -1,39 +1,35 @@
-CREATE DATABASE Employees_db;
+DROP DATABASE IF EXISTS employees_db;
 
-DROP DATABASE IF EXISTS Employees_db;
+CREATE DATABASE employees_db;
 
-USE Employees_db;
+USE employees_db;
 
-CREATE TABLE department_table (
-	id INT(10) NOT NULL AUTO_INCREMENT,
-    name VARCHAR(30) NOT NULL,
-    PRIMARY KEY (id)
+CREATE TABLE department (
+	id INT NOT NULL AUTO_INCREMENT,
+    department VARCHAR(30) NOT NULL,
+    PRIMARY KEY(id)
 );
-
-
-CREATE TABLE role_table (
-	id INT(10) NOT NULL AUTO_INCREMENT,
-    title VARCHAR(30)NOT NULL,
-    salary DECIMAL(4,30) NOT NULL,
-    department_id INT(50) NOT NULL,
-    FOREIGN KEY (id) REFERENCES department_table(id),
-    PRIMARY KEY (id)
+CREATE TABLE role (
+	id INT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(30) NOT NULL,
+    salary DECIMAL(10,2) NOT NULL,
+    department_id INT NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY (department_id) REFERENCES department(id)
 );
-
-CREATE TABLE exmployee_table (
-	id INT(10) NOT NULL AUTO_INCREMENT,
-    first_name VARCHAR(30) NOT NULL,
-    last_name VARCHAR(30) NOT NULL,
-    role_id INT(10) NOT NULL,
-    manager_id INT(10) NOT NULL,
-    FOREIGN KEY (id) REFERENCES role_table(id),
-    FOREIGN KEY (id) REFERENCES manager_table(id),
-    PRIMARY KEY (id)
+CREATE TABLE manager (
+	id INT NOT NULL AUTO_INCREMENT,
+    first_name VARCHAR (30) NOT NULL,
+    last_name VARCHAR (30) NOT NULL,
+    PRIMARY KEY(id)
 );
-
-CREATE TABLE manager_table (
-	id INT(10) NOT NULL AUTO_INCREMENT,
-    first_name VARCHAR(30) NOT NULL,
-    last_name VARCHAR(30) NOT NULL,
-    PRIMARY KEY (id)
+CREATE TABLE employee (
+	id INT NOT NULL AUTO_INCREMENT,
+    first_name VARCHAR (30) NOT NULL,
+    last_name VARCHAR (30) NOT NULL,
+    role_id INT NOT NULL,
+    -- m_id INT NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (role_id) REFERENCES role(id)
+    -- FOREIGN KEY (m_id) REFERENCES m_table(id)
 );

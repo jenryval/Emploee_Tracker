@@ -20,8 +20,6 @@ connection.connect(err => {
 });
 
 
-
-
 const employeeTracker = () =>
     inquirer.prompt(
   {
@@ -52,7 +50,8 @@ const employeeTracker = () =>
     
   })
   
-  const addDepartment () => {
+  const addDepartment = () => {
+    connection.query('SELECT * FROM department ')
 
   }
   
