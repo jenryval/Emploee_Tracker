@@ -1,57 +1,245 @@
-const mysql = require('mysql');
-const inquirer = require('inquirer');
-const cTable = require('console.table');
-const fs = require('fs')
+const connection = require("./config/connection");
+const inquirer = require("inquirer");
+let departmentNames;
+let departmentIds;
+let arrayOfDepartments = {};
+let roleNames;
+let roleIds;
+let arrayOfRoles = {};
+let employeeFullNames;
+let employeeIds;
+let arrayOfEmployees = {};
 
-
-var mysql      = require('mysql');
-const { allowedNodeEnvironmentFlags, exit } = require('process');
-var connection = mysql.createConnection({
-  host     : 'localhost',
-  user     : 'root',
-  password : 'root',
-  database : 'Employee_db'
-});
- 
-
-connection.connect(err => {
-  if (err) throw err
-  console.log(`connected to mysql on thread ${connection.threadId}`)
-});
-
-
-const employeeTracker = () =>
-    inquirer.prompt(
-  {
-    type:"list",
-    Name:"empolyee",
-    message:"What would you like to do?",
-    choices:['add departments', 'view departments', 'add empolyees', 'view employees', 'update employees', 'add roles', 'view roles']
-  },
-  
-  ).then(response => { 
-     if (response.employee === 'add departments') {
-      addDepartment()
-    } else if (response.employee === 'view departments') {
-      viewDepartment()
-    }else if (response.employee === 'add empolyees') {
-      addEmployee()
-    }else if (response.employee === 'view employees') {
-      viewEmployee()
-    }else if(response.employee === 'update employees') {
-      updateEmployee()
-    }else if (response.employee === 'add roles' ) {
-      addRole()
-    }else if (response.employee === 'view roles') {
-      viewRoles()
-    }else{
-      exit()
-    }
+let startUpQuery = () => {
+  connection.query("SELECT * FROM department", (err, res) => {
+    if (err) throw err;
     
-  })
+    departmentNames = res.map((x) => x.department);
+    departmentIds = res.map((x) => x.id);
+    for (var i = 0; i < departmentNames.length; i++) {
+      arrayOfDepartments[departmentNames[i]] = departmentIds[i];
+    }
+  });
+  connection.query("SELECT * FROM role", (err, res) => {
+    if (err) throw err;
   
-  const addDepartment = () => {
-    connection.query('SELECT * FROM department ')
+    roleNames = res.map((x) => x.title);
+    roleIds = res.map((x) => x.id);
+    for (var i = 0; i < roleNames.length; i++) {
+      arrayOfRoles[roleNames[i]] = roleIds[i];
+    }
+  });
+  connection.query("SELECT * FROM employee", (err, res) => {
+    if (err) throw err;
+  
+    employeeFullNames = res.map((x) => (x.first_name + " " + x.last_name));
+    employeeIds = res.map((x) => x.id);
+    for (var i = 0; i < employeeFullNames.length; i++) {
+      arrayOfEmployees[employeeFullNames[i]] = employeeIds[i];
+    }
+  });
+}
 
-  }
+const viewAllEmployeesByDepartment = () => {
+  inquirer
+    .prompt({
+      name: "department",
+      type: "list",
+      message: "Which department would you like to view?",
+      choices: departmentNames,
+    })
+    .then(function (answer) {
+      // storeAllDepartments()
+
+      // console.log(answer.department)
+      connection.query(`SELECT employee.id, employee.first_name, employee.last_name, role.title, department.department FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE department.department = ?;`, answer.department, (err, res) => {
+        if (err) throw err;
+        console.table(res);
+        employeeTracker();
+      });
+    });
+};
+
+const viewAllEmployeesByRole = () => {
+  inquirer
+    .prompt({
+      name: "role",
+      type: "list",
+      message: "What employee roles would you like to view?",
+      choices: roleNames,
+    })
+    .then(function (answer) {
+      // console.log(answer)
+      connection.query(`SELECT employee.id, employee.first_name, employee.last_name, role.title, department.department FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE role.title = ?;`, answer.role, (err, res) => {
+        if (err) throw err;
+        console.table(res);
+        employeeTracker();
+      });
+    });
+};
+
+const viewAllEmployees = () => {
+  connection.query(
+    `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.department, role.salary FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id;`,
+    (err, res) => {
+      if (err) throw err;
+      console.table(res);
+      employeeTracker();
+    }
+  );
+};
+
+const addDepartment = () => {
+  inquirer
+  .prompt(
+    {
+      name: "newDepartment",
+      type: "input",
+      message: "What department would you like to add?"
+    },
+  ).then((answer) => {
+    // console.log(answer.department)
+    connection.query(`INSERT INTO department (department) VALUES (?)`, answer.newDepartment, (err,res) => {
+      if (err) throw err
+      employeeTracker()
+    })
+  })
+};
+
+const addRole = () => {
+  inquirer
+  .prompt([
+    {
+      name: "department",
+      type: "list",
+      message: "Which department is this role part of?",
+      choices: departmentNames
+    },
+    {
+      name: "newRole",
+      type: "input",
+      message: "What is the role you would like to add?"
+    },
+    {
+      name: "salary",
+      type: "number",
+      message: "What is the yearly salary for this role?"
+    }
+  ]).then(({department, newRole, salary}) => {
+    let departmentIds = arrayOfDepartments[department]
+    connection.query(`INSERT INTO role(title, salary, department_id) VALUES ?`, [[[newRole,salary,departmentIds]]], (err,res) => {
+      if (err) throw err
+      employeeTracker()
+    })
+  })
+
+}
+
+const addEmployee = () => {
+  inquirer
+    .prompt([
+      {
+        name: "title",
+        type: "list",
+        message: "What is the employee's title?",
+        choices: roleNames
+      },
+      {
+        name: "firstName",
+        type: "input",
+        message: "What is the employee's first name?",
+      },
+      {
+        name: "lastName",
+        type: "input",
+        message: "What is the employee's last name?",
+      },
+    ])
+    .then(({title, firstName, lastName }) => {
+      let roleId = arrayOfRoles[title]
   
+      connection.query(`INSERT INTO employee (first_name, last_name, role_id) VALUES ?`, [[[firstName, lastName, roleId]]], (err,res) => {
+        if (err) throw err
+        employeeTracker()
+      })
+    })
+};
+
+const updateEmployeeRole = () => {
+  inquirer
+  .prompt(
+    [
+      {
+        name: "employeeName",
+        type: "list",
+        message: "Which employee's role would you like to update?",
+        choices: employeeFullNames
+      },
+      {
+        name: "updateRole",
+        type: "list",
+        message: "What is the employee's new role?",
+        choices: roleNames
+      }
+    ]
+  ).then(({employeeName, updateRole}) => {
+    let newRoleId = arrayOfRoles[updateRole]
+    let newEmployeeId = (arrayOfEmployees[employeeName])
+
+    connection.query(`UPDATE employee SET role_id = ? WHERE id = ?;`, [[newRoleId], [newEmployeeId]], (err, res) => {
+      if (err) throw err
+      employeeTracker()
+    })
+  })
+}
+
+const employeeTracker = () => {
+  startUpQuery()
+  inquirer
+  .prompt(
+    {
+      name: "action",
+      type: "list",
+      message: "What would you like to do?",
+      choices: [
+        "View All Employees By Department",
+        "View All Employees By Role",
+        "View All Employees",
+        "Add Department",
+        "Add Role",
+        "Add Employee",
+        "Update Employee Role",
+      
+      ],
+    },
+  ).then((answer) => {
+    // console.log(answer)
+    switch (answer.action) {
+      case "View All Employees By Department":
+        viewAllEmployeesByDepartment();
+        break;
+      case "View All Employees By Role":
+        viewAllEmployeesByRole()
+        break;
+      case "View All Employees":
+        viewAllEmployees();
+        break;
+      case "Add Department":
+        addDepartment()
+        break;
+      case "Add Role":
+        addRole()
+        break;
+      case "Add Employee":
+        addEmployee();
+        break;
+      case "Update Employee Role":
+        updateEmployeeRole();
+        break;
+    
+        
+    }
+  });
+};
+
+employeeTracker();
